@@ -15,69 +15,21 @@
 // August 2019 monthly mean for Germany from dwd.de
 #define SEALVLPRESSURE_HPA (1015.00) /* Adjusted to local forecast! */
 
+void handle_OnConnect();
+void handle_NotFound();
+String SendHTML(float temperature,float pressure,float altitude);
+
+
 Adafruit_BMP280 bmp;
+float temperature, pressure, altitude;
 
 const char* ssid = MY_SSID;
 const char* pwd = MY_PSWD;
 
-float temperature, pressure, altitude;
-
 ESP8266WebServer server(80);
 
-String SendHTML(float temperature,float pressure,float altitude){
-  String ptr = "<!DOCTYPE html> <html>\n";
-  ptr +="<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n";
-  ptr +="<title>ESP8266 Weather Station</title>\n";
-  ptr +="<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
-  ptr +="body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;}\n";
-  ptr +="p {font-size: 24px;color: #444444;margin-bottom: 10px;}\n";
-  ptr +="</style>\n";
-  ptr +="<script>\n";
-  ptr +="setInterval(loadDoc,1000);\n";
-  ptr +="function loadDoc() {\n";
-  ptr +="var xhttp = new XMLHttpRequest();\n";
-  ptr +="xhttp.onreadystatechange = function() {\n";
-  ptr +="if (this.readyState == 4 && this.status == 200) {\n";
-  ptr +="document.body.innerHTML =this.responseText}\n";
-  ptr +="};\n";
-  ptr +="xhttp.open(\"GET\", \"/\", true);\n";
-  ptr +="xhttp.send();\n";
-  ptr +="}\n";
-  ptr +="</script>\n";
-  ptr +="</head>\n";
-  ptr +="<body>\n";
-  ptr +="<div id=\"webpage\">\n";
-  ptr +="<h1>ESP8266 Weather Station</h1>\n";
-  ptr +="<p>Temperature: ";
-  ptr +=temperature;
-  ptr +="&deg;C</p>";
-  ptr +="<p>Pressure: ";
-  ptr +=pressure;
-  ptr +="hPa</p>";
-  ptr +="<p>Altitude: ";
-  ptr +=altitude;
-  ptr +="m</p>";
-  ptr +="</div>\n";
-  ptr +="</body>\n";
-  ptr +="</html>\n";
-  return ptr;
-}
-
-void handle_OnConnect() {
-  temperature = bmp.readTemperature();
-  pressure = bmp.readPressure() / 100.0F;
-  altitude = bmp.readAltitude(SEALVLPRESSURE_HPA);
-  server.send(200, "text/html", SendHTML(temperature,pressure,altitude)); 
-
-}
-
-void handle_NotFound(){
-  server.send(404, "text/plain", "Not found");
-}
-
-
 void setup() {
-  // put your setup code here, to run once:
+  // put your setup code here, run once before main loop:
   Serial.begin(115200);
   delay(100);  
 
@@ -120,8 +72,57 @@ void setup() {
 }
 
 void loop() {
+  // main code here, run in an endless loop:
   server.handleClient();
 }
 
+void handle_OnConnect() {
+  temperature = bmp.readTemperature();
+  pressure = bmp.readPressure() / 100.0F;
+  altitude = bmp.readAltitude(SEALVLPRESSURE_HPA);
+  server.send(200, "text/html", SendHTML(temperature,pressure,altitude));
 
-  
+}
+
+void handle_NotFound(){
+  server.send(404, "text/plain", "Not found");
+}
+
+String SendHTML(float temperature,float pressure,float altitude){
+  String ptr = "<!DOCTYPE html> <html>\n";
+  ptr +="<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n";
+  ptr +="<title>ESP8266 Weather Station</title>\n";
+  ptr +="<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
+  ptr +="body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;}\n";
+  ptr +="p {font-size: 24px;color: #444444;margin-bottom: 10px;}\n";
+  ptr +="</style>\n";
+  ptr +="<script>\n";
+  ptr +="setInterval(loadDoc,1000);\n";
+  ptr +="function loadDoc() {\n";
+  ptr +="var xhttp = new XMLHttpRequest();\n";
+  ptr +="xhttp.onreadystatechange = function() {\n";
+  ptr +="if (this.readyState == 4 && this.status == 200) {\n";
+  ptr +="document.body.innerHTML =this.responseText}\n";
+  ptr +="};\n";
+  ptr +="xhttp.open(\"GET\", \"/\", true);\n";
+  ptr +="xhttp.send();\n";
+  ptr +="}\n";
+  ptr +="</script>\n";
+  ptr +="</head>\n";
+  ptr +="<body>\n";
+  ptr +="<div id=\"webpage\">\n";
+  ptr +="<h1>ESP8266 Weather Station</h1>\n";
+  ptr +="<p>Temperature: ";
+  ptr +=temperature;
+  ptr +="&deg;C</p>";
+  ptr +="<p>Pressure: ";
+  ptr +=pressure;
+  ptr +="hPa</p>";
+  ptr +="<p>Altitude: ";
+  ptr +=altitude;
+  ptr +="m</p>";
+  ptr +="</div>\n";
+  ptr +="</body>\n";
+  ptr +="</html>\n";
+  return ptr;
+}
