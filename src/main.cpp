@@ -90,6 +90,21 @@ void mqtt_hello_world() {
   } 
 }
 
+void mqtt_publish_baro_sensor() {
+  char tempString[8];
+  char humString[8];
+  char pressString[8];
+  
+  dtostrf(temperature, 1, 2, tempString);
+  mqttClient.publish("esp8266/temperature", tempString);
+  
+  dtostrf(humidity, 1, 2, humString);
+  mqttClient.publish("esp8266/humidity", humString);
+  
+  dtostrf(pressure, 1, 2, pressString);
+  mqttClient.publish("esp8266/pressure", pressString);
+}
+
 void loop() {
   // main code here, run in an endless loop:
   if(!mqttClient.connected()){
@@ -97,6 +112,7 @@ void loop() {
   }
   mqttClient.loop();
   read_barometric_sensor();
+  mqtt_publish_baro_sensor();
   Serial.println(temperature);
   Serial.println(humidity);
   Serial.println(pressure);
