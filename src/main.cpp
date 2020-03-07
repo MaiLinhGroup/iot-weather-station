@@ -12,11 +12,12 @@
 void read_barometric_sensor();
 
 Adafruit_BME280 bme;
-float temperature, humidity, pressure, altitude;
+float temperature, humidity, pressure;
 
 const char* ssid = MY_SSID;
 const char* pwd = MY_PSWD;
-const char* mqtt_server = MQTT_BROKER_ADDR;
+const char* mqttServer = MQTT_BROKER_ADDR;
+const int mqttPort = MQTT_PORT;
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
@@ -33,7 +34,7 @@ void setup() {
   Serial.println(F("Weather Station setup."));
 
   // setup sensor
-  while (!bme.begin())
+  while (!bme.begin(BME280_ADDRESS_ALTERNATE))
   {
     Serial.println(F("No sensor found, please check wiring!"));
     delay(1500); // wait for 1.5s
@@ -55,13 +56,29 @@ void setup() {
   Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
 
   // setup mqtt
-  mqttClient.setServer(mqtt_server, 1883);
+  mqttClient.setServer(mqttServer, mqttPort);
 }
 
-void loop() {
-  // main code here, run in an endless loop:
-  mqttClient.loop();
+void mqtt_reconnect() {
+  // Loop until reconnected
+  while (!mqttClient.connected()) {
+ 
+    if (mqttClient.connect("ESP8266Client")) {
+ 
+      // Serial.println("connected");  
+ 
+    } else {
+ 
+      Serial.println("Connecting to MQTT...");
+      Serial.print("failed with state ");
+      Serial.print(mqttClient.state());
+      delay(2000);
+ 
+    }
+  }
+}
 
+void mqtt_hello_world() {
   unsigned long now = millis();
   if (now - lastMsg > 2000) {
     lastMsg = now;
@@ -69,9 +86,23 @@ void loop() {
     snprintf(msg, MSG_BUFFER_SIZE, "hello world #%ld", value);
     Serial.print("Publish message: ");
     Serial.println(msg);
-    mqttClient.publish("test", msg);
-  }
+    mqttClient.publish("test/hello/world", msg);
+  } 
 }
+
+void loop() {
+  // main code here, run in an endless loop:
+  if(!mqttClient.connected()){
+    mqtt_reconnect();
+  }
+  mqttClient.loop();
+  read_barometric_sensor();
+  Serial.println(temperature);
+  Serial.println(humidity);
+  Serial.println(pressure);
+  Serial.println("---");
+}
+
 
 void read_barometric_sensor() {
   temperature = bme.readTemperature();
