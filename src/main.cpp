@@ -3,23 +3,30 @@
 #include <Wire.h>
 #include <SPI.h>
 #include <Adafruit_BME280.h>
-
-#include <ESP8266WebServer.h>
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
 
 #include "main.h"
 
-void handle_OnConnect();
-void handle_NotFound();
-String SendHTML(float temperature, float humidity, float pressure,float altitude);
-
+// declare function signatures
+void read_barometric_sensor();
+void read_gas_sensor();
 
 Adafruit_BME280 bme;
-float temperature, humidity, pressure, altitude;
+float temperature, humidity, pressure;
+
+int prevConductivity = 0;
+int prevGas = -1;
+int gasSensorValue;
 
 const char* ssid = MY_SSID;
 const char* pwd = MY_PSWD;
+const char* mqttServer = MQTT_BROKER_ADDR;
+const int mqttPort = MQTT_PORT;
 
-ESP8266WebServer server(80);
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
+
 
 void setup() {
   // put your setup code here, run once before main loop:
@@ -28,90 +35,90 @@ void setup() {
 
   Serial.println(F("Weather Station setup."));
 
-  while (!bme.begin())
+  // setup sensor
+  while (!bme.begin(BME280_ADDRESS_ALTERNATE))
   {
     Serial.println(F("No sensor found, please check wiring!"));
     delay(1500); // wait for 1.5s
   }
-  Serial.println(F("GYBMEP BME/BMP280 found!"));
+  Serial.println(F("Sensor GYBMEP BME/BMP280 found!"));
   
+  // setup wifi
   Serial.println("Connecting to ");
   Serial.println(ssid);
 
-  //connect to your local wi-fi network
   WiFi.begin(ssid, pwd);
 
-  //check wi-fi is connected to wi-fi network
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.print(".");
   }
   Serial.println("");
-  Serial.println("WiFi connected..!");
+  Serial.println("WiFi connected...!");
   Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
 
-  server.on("/", handle_OnConnect);
-  server.onNotFound(handle_NotFound);
+  // setup mqtt
+  mqttClient.setServer(mqttServer, mqttPort);
+}
 
-  server.begin();
-  Serial.println("HTTP server started");
+void mqtt_reconnect() {
+  // Loop until reconnected
+  while (!mqttClient.connected()) {
+ 
+    if (mqttClient.connect("ESP8266Client")) {
+ 
+      // Serial.println("connected");
+ 
+    } else {
+ 
+      Serial.println("Connecting to MQTT...");
+      Serial.print("failed with state ");
+      Serial.print(mqttClient.state());
+      delay(2000);
+ 
+    }
+  }
+}
+
+void mqtt_publish_sensor_data() {
+  char tempString[8];
+  char humString[8];
+  char pressString[8];
+  // char gasString[8];
+  
+  dtostrf(temperature, 1, 2, tempString);
+  mqttClient.publish("esp8266/temperature", tempString);
+  
+  dtostrf(humidity, 1, 2, humString);
+  mqttClient.publish("esp8266/humidity", humString);
+  
+  dtostrf(pressure, 1, 2, pressString);
+  mqttClient.publish("esp8266/pressure", pressString);
+
+  // dtostrf(gasSensorValue, 1, 2, gasString);
+  mqttClient.publish("esp8266/gas", String(gasSensorValue).c_str());
 }
 
 void loop() {
   // main code here, run in an endless loop:
-  server.handleClient();
+  if(!mqttClient.connected()){
+    mqtt_reconnect();
+  }
+  mqttClient.loop();
+
+  read_barometric_sensor();
+  read_gas_sensor();
+  mqtt_publish_sensor_data();
 }
 
-void handle_OnConnect() {
+void read_barometric_sensor() {
   temperature = bme.readTemperature();
   humidity = bme.readHumidity();
   pressure = bme.readPressure() / 100.0F;
-  altitude = bme.readAltitude(SEALVLPRESSURE_HPA);
-  server.send(200, "text/html", SendHTML(temperature, humidity, pressure,altitude));
 }
 
-void handle_NotFound(){
-  server.send(404, "text/plain", "Not found");
-}
 
-String SendHTML(float temperature, float humidity, float pressure, float altitude) {
-  String ptr = "<!DOCTYPE html> <html>\n";
-  ptr +="<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n";
-  ptr +="<title>ESP8266 Weather Station</title>\n";
-  ptr +="<style>html { font-family: Helvetica; display: inline-block; margin: 0px auto; text-align: center;}\n";
-  ptr +="body{margin-top: 50px;} h1 {color: #444444;margin: 50px auto 30px;}\n";
-  ptr +="p {font-size: 24px;color: #444444;margin-bottom: 10px;}\n";
-  ptr +="</style>\n";
-  ptr +="<script>\n";
-  ptr +="setInterval(loadDoc,1000);\n";
-  ptr +="function loadDoc() {\n";
-  ptr +="var xhttp = new XMLHttpRequest();\n";
-  ptr +="xhttp.onreadystatechange = function() {\n";
-  ptr +="if (this.readyState == 4 && this.status == 200) {\n";
-  ptr +="document.body.innerHTML =this.responseText}\n";
-  ptr +="};\n";
-  ptr +="xhttp.open(\"GET\", \"/\", true);\n";
-  ptr +="xhttp.send();\n";
-  ptr +="}\n";
-  ptr +="</script>\n";
-  ptr +="</head>\n";
-  ptr +="<body>\n";
-  ptr +="<div id=\"webpage\">\n";
-  ptr +="<h1>ESP8266 Weather Station</h1>\n";
-  ptr +="<p>Temperature: ";
-  ptr +=temperature;
-  ptr +="&deg;C</p>";
-  ptr +="<p>Humidity: ";
-  ptr +=humidity;
-  ptr +="&percnt;</p>";
-  ptr +="<p>Pressure: ";
-  ptr +=pressure;
-  ptr +="hPa</p>";
-  ptr +="<p>Altitude: ";
-  ptr +=altitude;
-  ptr +="m</p>";
-  ptr +="</div>\n";
-  ptr +="</body>\n";
-  ptr +="</html>\n";
-  return ptr;
+void read_gas_sensor() {
+  gasSensorValue = analogRead(GAS_IN_PIN); // read analog input pin 0
+  delay(1000);
 }
