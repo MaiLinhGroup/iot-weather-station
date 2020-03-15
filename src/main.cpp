@@ -80,24 +80,6 @@ void mqtt_reconnect() {
   }
 }
 
-unsigned long lastMsg = 0;
-#define MSG_BUFFER_SIZE	(50)
-char msg[MSG_BUFFER_SIZE];
-int value = 0;
-void mqtt_hello_world() {
-  unsigned long now = millis();
-  if (now - lastMsg > 2000) {
-    lastMsg = now;
-    ++value;
-    snprintf(msg, MSG_BUFFER_SIZE, "hello world #%ld", value);
-    if (mqttClient.publish("test/hello/world", msg)) {
-      Serial.print("Publish message: ");
-      Serial.println(msg);
-    }
-
-  } 
-}
-
 void mqtt_publish_sensor_data() {
   char tempString[8];
   char humString[8];
@@ -125,7 +107,6 @@ void loop() {
   mqttClient.loop();
 
   read_barometric_sensor();
-  // Serial.println("---");
   read_gas_sensor();
   mqtt_publish_sensor_data();
 }
@@ -134,14 +115,10 @@ void read_barometric_sensor() {
   temperature = bme.readTemperature();
   humidity = bme.readHumidity();
   pressure = bme.readPressure() / 100.0F;
-  // Serial.println(temperature);
-  // Serial.println(humidity);
-  // Serial.println(pressure);
 }
 
 
 void read_gas_sensor() {
-  gasSensorValue = analogRead(0); // read analog input pin 0
-  // Serial.println(gasSensorValue, DEC);
+  gasSensorValue = analogRead(GAS_IN_PIN); // read analog input pin 0
   delay(1000);
 }

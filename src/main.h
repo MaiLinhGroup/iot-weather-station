@@ -9,4 +9,6 @@
 // August 2019 monthly mean for Germany from dwd.de
 #define SEALVLPRESSURE_HPA (1040.00) /* Adjust this to your local forecast! */
 
+#define GAS_IN_PIN (0)
+
 #endif
