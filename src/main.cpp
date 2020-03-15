@@ -87,16 +87,16 @@ void mqtt_publish_sensor_data() {
   // char gasString[8];
   
   dtostrf(temperature, 1, 2, tempString);
-  mqttClient.publish("esp8266/temperature", tempString);
+  mqttClient.publish("home/1/temperature", tempString);
   
   dtostrf(humidity, 1, 2, humString);
-  mqttClient.publish("esp8266/humidity", humString);
+  mqttClient.publish("home/1/humidity", humString);
   
   dtostrf(pressure, 1, 2, pressString);
-  mqttClient.publish("esp8266/pressure", pressString);
+  mqttClient.publish("home/1/pressure", pressString);
 
   // dtostrf(gasSensorValue, 1, 2, gasString);
-  mqttClient.publish("esp8266/gas", String(gasSensorValue).c_str());
+  mqttClient.publish("home/1/gas", String(gasSensorValue).c_str());
 }
 
 void loop() {
