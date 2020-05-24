@@ -10,8 +10,9 @@ IoT Weather Station
 
 - IDE of your choice (Recommendation is [VSCode with Platformio](https://platformio.org/install/ide?install=vscode))
 ## Dependencies
-- Library for the sensor by [Adafruit](https://github.com/adafruit/Adafruit_BME280_Library)(there are alternatives available though)
+- Library for the temperature sensor by [Adafruit](https://github.com/adafruit/Adafruit_BME280_Library)(there are alternatives available though)
 - Library for [Pub-Sub](https://github.com/knolleary/pubsubclient) over MQTT
+- Library for the Air Quality sensor [MQ135](https://platformio.org/lib/show/2537/TroykaMQ)
 
 ## Getting Started
 

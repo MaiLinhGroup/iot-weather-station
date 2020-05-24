@@ -5,13 +5,13 @@
 #include <Adafruit_BME280.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include <TroykaMQ.h>
 
 #include "main.h"
 
 // August 2019 monthly mean for Germany from dwd.de
 #define SEALVLPRESSURE_HPA (1040.00) /* Adjust this to your local forecast! */
-
-#define GAS_IN_PIN (0)
+#define PIN_MQ135  A0
 
 // declare function signatures
 void read_barometric_sensor();
@@ -20,9 +20,8 @@ void read_gas_sensor();
 Adafruit_BME280 bme;
 float temperature, humidity, pressure;
 
-int prevConductivity = 0;
-int prevGas = -1;
-int gasSensorValue;
+MQ135 mq135(PIN_MQ135);
+unsigned long gasSensorValue;
 
 const char* ssid = MY_SSID;
 const char* pwd = MY_PSWD;
@@ -42,10 +41,17 @@ void setup() {
   // setup sensor
   while (!bme.begin(BME280_ADDRESS_ALTERNATE))
   {
-    Serial.println(F("No sensor found, please check wiring!"));
+    Serial.println(F("[BME280]: Sensor not found, please check wiring!"));
     delay(1500); // wait for 1.5s
   }
-  Serial.println(F("Sensor GYBMEP BME/BMP280 found!"));
+  Serial.println(F("[BME280]: Sensor found!"));
+  Serial.println(F("=============================="));
+  Serial.println(F("[MQ135]: Warm up for 60 seconds before starting calibration..."));
+  delay(60000);
+  mq135.calibrate();
+  Serial.print("Ro = ");
+  Serial.println(mq135.getRo());
+  Serial.println(F("[MQ135]: Sensor calibrated!"));
   
   // setup wifi
   Serial.println("Connecting to ");
@@ -123,6 +129,11 @@ void read_barometric_sensor() {
 
 
 void read_gas_sensor() {
-  gasSensorValue = analogRead(GAS_IN_PIN); // read analog input pin 0
-  delay(1000);
+  Serial.print("Ratio: ");
+  Serial.print(mq135.readRatio());
+  gasSensorValue = mq135.readCO2();
+  Serial.print("\tCO2: ");
+  Serial.print(gasSensorValue);
+  Serial.println(" ppm");
+  delay(100);
 }
