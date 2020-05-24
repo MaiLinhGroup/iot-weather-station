@@ -8,6 +8,11 @@
 
 #include "main.h"
 
+// August 2019 monthly mean for Germany from dwd.de
+#define SEALVLPRESSURE_HPA (1040.00) /* Adjust this to your local forecast! */
+
+#define GAS_IN_PIN (0)
+
 // declare function signatures
 void read_barometric_sensor();
 void read_gas_sensor();
@@ -22,7 +27,6 @@ int gasSensorValue;
 const char* ssid = MY_SSID;
 const char* pwd = MY_PSWD;
 const char* mqttServer = MQTT_BROKER_ADDR;
-const int mqttPort = MQTT_PORT;
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
@@ -58,7 +62,7 @@ void setup() {
   Serial.print("Got IP: ");  Serial.println(WiFi.localIP());
 
   // setup mqtt
-  mqttClient.setServer(mqttServer, mqttPort);
+  mqttClient.setServer(mqttServer, 1883);
 }
 
 void mqtt_reconnect() {
