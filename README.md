@@ -8,8 +8,10 @@ IoT Weather Station
 
 ## Software
 
-- IDE of your choice
+- IDE of your choice (Recommendation is [VSCode with Platformio](https://platformio.org/install/ide?install=vscode))
+## Dependencies
 - Library for the sensor by [Adafruit](https://github.com/adafruit/Adafruit_BME280_Library)(there are alternatives available though)
+- Library for [Pub-Sub](https://github.com/knolleary/pubsubclient) over MQTT
 
 ## Getting Started
 
@@ -19,7 +21,7 @@ foo@bar:~$ git clone git@github.com:MaiLinhGroup/iot-weather-station.git
 ```
 
 - open `src/main.h` and replace the default values for WiFi with own WiFi credentials
-- depending on which IDE *(please check out the respective documentation)*, compile and flash the code to the board
+- depending on which IDE *(please check out the respective documentation)*, resolve the aforementioned dependencies, compile and flash the code to the board
 - open a serial monitor, if needed set `baud_rate: 115200` , and press the reset button on the MCU to reboot the MCU
 - after reboot the MCU will display its `IP address` in the serial monitor, enter/open this address in any browser to see weather station information
 
